@@ -1,0 +1,6 @@
+name = EGRIN2
+description = EGRIN2 API integration
+core = 7.x
+version = 0.01
+
+configure = admin/config/content/egrin2
