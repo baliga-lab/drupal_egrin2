@@ -8,33 +8,231 @@ function egrin2_help($path, $arg) {
     }
 }
 
+/*
+ * Block Definitions
+ */
+function make_corem_table() {
+    $block['subject'] = t('Corems');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $resp = drupal_http_request($url . "/api/v1.0.0/corems");
+        $corems = json_decode($resp->data)->corems;
+        $header = array(array("data" => "Corem ID", "sort" => "asc"), array("data" => "# Genes"),
+                        array("data" => "# Conditions"));
+        $rows = array();
+        foreach ($corems as $c) {
+            $rows []= array(t('<a href="corem?corem=' . $c->id . '">' . $c->id . '</a>'),
+                            t($c->num_genes), t($c->num_conds));
+        }
+        $stable = array("header" => $header,
+                        "rows" => $rows,
+                        "attributes" => array(),
+                        "caption" => "",
+                        "colgroups" => array(),
+                        "sticky" => false,
+                        "empty" => "no entries");
+        $block['content'] = theme_table($stable);
+    }
+    return $block;
+}
+
+function make_corem_genes_table() {
+    $block['subject'] = t('Corem Genes');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $corem_id = $_GET['corem'];
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_genes/" . $corem_id);
+        $genes = json_decode($resp->data)->genes;
+
+        $header = array(array("data" => "Name", "sort" => "asc"),
+                        array("data" => "Common Name"),
+                        array("data" => "Links"),
+                        array("data" => "Description"),
+                        array("data" => "Start"),
+                        array("data" => "Stop"),
+                        array("data" => "Strand"),
+                        array("data" => "Chromosome"),
+                        );
+        $rows = array();
+        foreach ($genes as $g) {
+            $rows []= array(t($g->gene_name),
+                            t($g->common_name),
+                            t("TODO"),
+                            t($g->description),
+                            t($g->start),
+                            t($g->stop),
+                            t($g->strand),
+                            t($g->chromosome),
+                            );
+        }
+        $stable = array("header" => $header,
+                        "rows" => $rows,
+                        "attributes" => array(),
+                        "caption" => "",
+                        "colgroups" => array(),
+                        "sticky" => false,
+                        "empty" => "no entries");
+        $block['content'] = theme_table($stable);
+    }
+    return $block;
+}
+
+function make_corem_conditionblocks_table() {
+    $block['subject'] = t('Condition Blocks');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $corem_id = $_GET['corem'];
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_condition_enrichment/" . $corem_id);
+        $blocks = json_decode($resp->data)->condition_blocks;
+        $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
+        $rows = array();
+        foreach ($blocks as $b) {
+            $rows []= array(t($b->name),t($b->q_value));
+        }
+        $stable = array("header" => $header,
+                        "rows" => $rows,
+                        "attributes" => array(),
+                        "caption" => "",
+                        "colgroups" => array(),
+                        "sticky" => false,
+                        "empty" => "no entries");
+        $block['content'] = theme_table($stable);
+    }
+    return $block;
+}
+
+function make_corem_funcat_table() {
+    $block['subject'] = t('Functional Categories');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $corem_id = $_GET['corem'];
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_categories/" . $corem_id);
+        $cats = json_decode($resp->data)->categories;
+        $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
+        $rows = array();
+        foreach ($cats as $c) {
+            $rows []= array(t($c->category),t($c->p_adj));
+        }
+        $stable = array("header" => $header,
+                        "rows" => $rows,
+                        "attributes" => array(),
+                        "caption" => "",
+                        "colgroups" => array(),
+                        "sticky" => false,
+                        "empty" => "no entries");
+        $block['content'] = theme_table($stable);
+    }
+    return $block;
+}
+
+function make_corem_gres_table() {
+    $block['subject'] = t('GRES');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $corem_id = $_GET['corem'];
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_gres/" . $corem_id);
+        $gres = json_decode($resp->data)->gres;
+        $header = array(array("data" => "GRE", "sort" => "asc"),
+                        array("data" => "Motif"),
+                        array("data" => "Motif e-value"),
+                        array("data" => "q-value"),
+                        );
+        $rows = array();
+        $seqlogo_code = "";
+        foreach ($gres as $g) {
+            $rows []= array(t($g->gre),
+                            t('<span id="gre_pssm_' . $g->gre . '"></span>'),
+                            t($g->motif_evalue),
+                            t($g->q_value),);
+
+            $seqlogo_code .= "var gre_pssm_" . $g->gre . ' = ' . json_encode($g->pssm) . ';';
+        }
+        $seqlogo_code .= "jQuery(document).ready(function() {";
+        foreach ($gres as $g) {
+            if (get_object_vars($g->pssm)) {
+                $seqlogo_code .= '  seqlogo.makeLogo("gre_pssm_' . $g->gre . '", gre_pssm_' . $g->gre . ', {width: 400, height: 120, glyphStyle: "20pt Helvetica"});';
+            }
+        }
+        $seqlogo_code .= "});";
+        drupal_add_js(t($seqlogo_code),
+                      array('type' => 'inline', 'scope' => 'footer'));
+        $stable = array("header" => $header,
+                        "rows" => $rows,
+                        "attributes" => array(),
+                        "caption" => "",
+                        "colgroups" => array(),
+                        "sticky" => false,
+                        "empty" => "no entries");
+        $block['content'] = theme_table($stable);
+    }
+    return $block;
+}
+
 function egrin2_block_info() {
-    $blocks['egrin2'] = array('info' => t('EGRIN2'),
-                              'cache' => DRUPAL_CACHE_PER_ROLE,);
-    $blocks['corem_table'] = array('info' => t('EGRIN2 Corem Table'),
+    $blocks['cgenes_table'] = array('info' => t('Corem Genes'),);
+    $blocks['ccblocks_table'] = array('info' => t('Corem Condition Blocks'),);
+    $blocks['cfuncat_table'] = array('info' => t('Corem Functional Categories'),);
+    $blocks['cgres_table'] = array('info' => t('Corem GREs'),);
+    $blocks['summary'] = array('info' => t('EGRIN2 Model Summary'),
+                               'cache' => DRUPAL_CACHE_PER_ROLE,);
+    $blocks['corem_table'] = array('info' => t('EGRIN2 Corems'),
                                    'status' => TRUE,
-                                   //'visibility' => BLOCK_VISIBILITY_LISTED,
-                                   //'pages' => 'node/*',
                                    );
     return $blocks;
 }
 
 function egrin2_block_view($delta='') {
     switch ($delta) {
-    case 'egrin2':
-        $block['subject'] = t('EGRIN2 Dummy');
+    case 'summary':
+        $block['subject'] = t('EGRIN2 Model Overview');
         if (user_access('access content')) {
-            $block['content'] = t('EGRIN2 content');
+            $url = variable_get('egrin2_url', '');
+            $resp = drupal_http_request($url . "/api/v1.0.0/summary");
+            $summary = json_decode($resp->data);
+            $stable = array("header" => array(array("data" => "Type"), array("data" => "Num")),
+                            "rows" => array(array("GREs", $summary->num_gres),
+                                            array("Corems", $summary->num_corems),
+                                            array("Conditions", $summary->num_conditions),
+                                            array("Genes", $summary->num_genes),
+                                            array("Biclusters", $summary->num_biclusters)),
+                            "attributes" => array(),
+                            "caption" => "Summary of model",
+                            "colgroups" => array(),
+                            "sticky" => false,
+                            "empty" => "no entries");
+            $block['content'] = theme_table($stable);
         }
         break;
     case 'corem_table':
-        $block['subject'] = t('Corem Table');
-        if (user_access('access content')) {
-            $block['content'] = t('Corem table content');
-        }
+        $block = make_corem_table();
+        break;
+    case 'cgenes_table':
+        $block = make_corem_genes_table();
+        break;
+    case 'cfuncat_table':
+        $block = make_corem_funcat_table();
+        break;
+    case 'ccblocks_table':
+        $block = make_corem_conditionblocks_table();
+        break;
+    case 'cgres_table':
+        drupal_add_library('egrin2', 'seqlogo');
+        $block = make_corem_gres_table();
         break;
     }
     return $block;
+}
+
+
+/*
+ * The _library() hook is used to declare external Javascript and CSS libraries.
+ * In order to use them we also need to call drupal_add_library() at the correct places
+ */
+function egrin2_library() {
+    $libraries['seqlogo'] = array('title' => 'sequencelogo.js',
+                                  'version' => '1.0',
+                                  'js' => array(drupal_get_path('module', 'egrin2') . '/js/seqlogo.js' => array(),),);
+    return $libraries;
 }
 
 /*
