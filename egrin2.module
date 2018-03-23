@@ -57,9 +57,12 @@ function make_corem_genes_table($corem) {
                         );
         $rows = array();
         foreach ($genes as $g) {
+            $links = "<a class=\"small-link\" target=\"_blank\" href=\"https://www.ncbi.nlm.nih.gov/protein/" . $g->accession . "\">NCBI</a><br>" .
+                "<a class=\"small-link\" target=\"_blank\" href=\"http://tuberculist.epfl.ch/quicksearch.php?gene+name=" . $g->gene_name . "\">Tuberculist</a><br>";
+
             $rows []= array(t('<a href="' . $base_url . '/genes/' . $g->gene_name . '">' . $g->gene_name . "</a>"),
                             t($g->common_name),
-                            t("TODO"),
+                            t($links),
                             t($g->description),
                             t($g->start),
                             t($g->stop),
