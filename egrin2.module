@@ -12,6 +12,7 @@ function egrin2_help($path, $arg) {
  * Block Definitions
  */
 function make_corem_table() {
+    global $base_url;
     $block['subject'] = t('Corems');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
@@ -21,7 +22,7 @@ function make_corem_table() {
                         array("data" => "# Conditions"));
         $rows = array();
         foreach ($corems as $c) {
-            $rows []= array(t('<a href="corem?corem=' . $c->id . '">' . $c->id . '</a>'),
+            $rows []= array(t('<a href="' . $base_url . '/egrin2/corem/' . $c->id . '">' . $c->id . '</a>'),
                             t($c->num_genes), t($c->num_conds));
         }
         $stable = array("header" => $header,
@@ -36,12 +37,11 @@ function make_corem_table() {
     return $block;
 }
 
-function make_corem_genes_table() {
+function make_corem_genes_table($corem) {
     $block['subject'] = t('Corem Genes');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
-        $corem_id = $_GET['corem'];
-        $resp = drupal_http_request($url . "/api/v1.0.0/corem_genes/" . $corem_id);
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_genes/" . $corem);
         $genes = json_decode($resp->data)->genes;
 
         $header = array(array("data" => "Name", "sort" => "asc"),
@@ -77,12 +77,11 @@ function make_corem_genes_table() {
     return $block;
 }
 
-function make_corem_conditionblocks_table() {
+function make_corem_conditionblocks_table($corem) {
     $block['subject'] = t('Condition Blocks');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
-        $corem_id = $_GET['corem'];
-        $resp = drupal_http_request($url . "/api/v1.0.0/corem_condition_enrichment/" . $corem_id);
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_condition_enrichment/" . $corem);
         $blocks = json_decode($resp->data)->condition_blocks;
         $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
         $rows = array();
@@ -101,12 +100,11 @@ function make_corem_conditionblocks_table() {
     return $block;
 }
 
-function make_corem_funcat_table() {
+function make_corem_funcat_table($corem) {
     $block['subject'] = t('Functional Categories');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
-        $corem_id = $_GET['corem'];
-        $resp = drupal_http_request($url . "/api/v1.0.0/corem_categories/" . $corem_id);
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_categories/" . $corem);
         $cats = json_decode($resp->data)->categories;
         $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
         $rows = array();
@@ -125,12 +123,11 @@ function make_corem_funcat_table() {
     return $block;
 }
 
-function make_corem_gres_table() {
+function make_corem_gres_table($corem) {
     $block['subject'] = t('GRES');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
-        $corem_id = $_GET['corem'];
-        $resp = drupal_http_request($url . "/api/v1.0.0/corem_gres/" . $corem_id);
+        $resp = drupal_http_request($url . "/api/v1.0.0/corem_gres/" . $corem);
         $gres = json_decode($resp->data)->gres;
         $header = array(array("data" => "GRE", "sort" => "asc"),
                         array("data" => "Motif"),
@@ -168,20 +165,93 @@ function make_corem_gres_table() {
     return $block;
 }
 
+function make_corem_coexpression_chart($corem) {
+    global $base_url;
+    $block['subject'] = t('Co-Expression Chart');
+    if (user_access('access content')) {
+        $url = variable_get('egrin2_url', '');
+        $html = '';
+        //$html = "<div style=\"width: 100%;\"><img id=\"coexp_help\" style=\"width: 18px; float: right\" src=\"" . esc_url(plugins_url('images/help.png', __FILE__)). "\"></div>\n";
+        $html .= '<div id="corem_coexps" style="width: 100%; height: 300px"></div>';
+        $block['content'] = t($html);
+
+        // javascript here
+        $content = '';
+        $content .= "    function makeCoCoExpChart(data, conds) {";
+        $content .= "      var x, chart = Highcharts.chart('corem_coexps', {";
+        $content .= "        chart: { type: 'line' },";
+        $content .= "        title: { text: 'Co-expression' },";
+        $content .= "        xAxis: { title: { text: 'Conditions' }, categories: conds,";
+        $content .= "                 labels: {";
+        $content .= "                   formatter: function() {";
+        $content .= "                     return this.axis.categories.indexOf(this.value);";
+        $content .= "                   }}},";
+        $content .= "        yAxis: { title: { text: 'Standardized expression'} },";
+        $content .= "        series: data";
+        $content .= "     })";
+        $content .= "   }";
+
+        $content .= "  jQuery(document).ready(function() {";
+        $content .= "    jQuery('#coexp_help').qtip({ content: 'Hover over data points to see condition and value information' });";
+        $content .= "    jQuery.ajax({";
+        $content .= "      url: '" . $base_url . "/egrin2/test/" . $corem . "',";
+        $content .= "      method: 'GET',";
+        $content .= "      dataType: 'json',";
+        $content .= "      contentType: 'application/json',";
+        $content .= "      complete: function(xhr) {";
+        $content .= "        var data = JSON.parse(xhr.responseText);";
+        $content .= "        makeCoCoExpChart(data.expressions, data.conditions);";
+        $content .= "      }";
+        $content .= "    });";
+        $content .= "  });";
+        drupal_add_js(t($content),
+                      array('type' => 'inline', 'scope' => 'footer'));
+    }
+    return $block;
+}
+
+
 function egrin2_block_info() {
-    $blocks['cgenes_table'] = array('info' => t('Corem Genes'),);
-    $blocks['ccblocks_table'] = array('info' => t('Corem Condition Blocks'),);
-    $blocks['cfuncat_table'] = array('info' => t('Corem Functional Categories'),);
-    $blocks['cgres_table'] = array('info' => t('Corem GREs'),);
+    $blocks['cgenes_table'] = array('info' => t('Corem Genes'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corem/*',);
+
+    $blocks['ccblocks_table'] = array('info' => t('Corem Condition Blocks'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corem/*',);
+    $blocks['cfuncat_table'] = array('info' => t('Corem Functional Categories'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corem/*',);
+    $blocks['cgres_table'] = array('info' => t('Corem GREs'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corem/*',);
+    $blocks['ccoexp_chart'] = array('info' => t('Corem Co-Expression Chart'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corem/*',);
     $blocks['summary'] = array('info' => t('EGRIN2 Model Summary'),
                                'cache' => DRUPAL_CACHE_PER_ROLE,);
-    $blocks['corem_table'] = array('info' => t('EGRIN2 Corems'),
-                                   'status' => TRUE,
-                                   );
+    $blocks['corems_table'] = array('info' => t('EGRIN2 Corems Table'),
+                                    'status' => TRUE,
+                                    'region' => 'content',
+                                    'visibility' => BLOCK_VISIBILITY_LISTED,
+                                    'pages' => 'egrin2/corems',);
     return $blocks;
 }
 
 function egrin2_block_view($delta='') {
+    $url_comps = explode('/', request_uri());
+    $last_arg = end($url_comps);
+
     switch ($delta) {
     case 'summary':
         $block['subject'] = t('EGRIN2 Model Overview');
@@ -203,21 +273,26 @@ function egrin2_block_view($delta='') {
             $block['content'] = theme_table($stable);
         }
         break;
-    case 'corem_table':
+    case 'corems_table':
         $block = make_corem_table();
         break;
     case 'cgenes_table':
-        $block = make_corem_genes_table();
+        $block = make_corem_genes_table($last_arg);
         break;
     case 'cfuncat_table':
-        $block = make_corem_funcat_table();
+        $block = make_corem_funcat_table($last_arg);
         break;
     case 'ccblocks_table':
-        $block = make_corem_conditionblocks_table();
+        $block = make_corem_conditionblocks_table($last_arg);
         break;
     case 'cgres_table':
         drupal_add_library('egrin2', 'seqlogo');
-        $block = make_corem_gres_table();
+        $block = make_corem_gres_table(($last_arg));
+        break;
+    case 'ccoexp_chart':
+        drupal_add_library('egrin2', 'highcharts');
+        drupal_add_library('egrin2', 'qtip');
+        $block = make_corem_coexpression_chart($last_arg);
         break;
     }
     return $block;
@@ -232,6 +307,12 @@ function egrin2_library() {
     $libraries['seqlogo'] = array('title' => 'sequencelogo.js',
                                   'version' => '1.0',
                                   'js' => array(drupal_get_path('module', 'egrin2') . '/js/seqlogo.js' => array(),),);
+    $libraries['highcharts'] = array('title' => 'highcharts.js',
+                                     'version' => '5.0.6',
+                                     'js' => array(drupal_get_path('module', 'egrin2') . '/js/highcharts.js' => array(),),);
+    $libraries['qtip'] = array('title' => 'qtip.js',
+                               'version' => '3.0.3',
+                               'js' => array(drupal_get_path('module', 'egrin2') . '/js/jquery.qtip.min.js' => array(),),);
     return $libraries;
 }
 
@@ -249,6 +330,24 @@ function egrin2_menu() {
                                                   'access arguments' => array('access administration pages'),
                                                   'type' => MENU_NORMAL_ITEM,
                                                   );
+    /*
+     * Define additional routes, that are "virtual" nodes. Users can assume that they
+     * exist, and therefore just use them
+     */
+    // Ajax example route
+    $items['egrin2/test/%'] = array('page callback' => 'egrin2_test',
+                                    'page arguments' => array(2,),
+                                    'access arguments' => array('access content'),
+                                    );
+
+    // Virtual nodes for the corems list and corem detail page
+    $items['egrin2/corems'] = array('page callback' => 'egrin2_corems',
+                                    'access arguments' => array('access content'),
+                                    );
+    $items['egrin2/corem/%'] = array('page callback' => 'egrin2_corem',
+                                     'page arguments' => array(1,),
+                                     'access arguments' => array('access content'),
+                                     );
     return $items;
 }
 
@@ -262,4 +361,29 @@ function egrin2_form($form, &$form_state) {
                                 '#required' => TRUE,
                                 );
     return system_settings_form($form);
+}
+
+
+/* AJAX Service functions */
+function egrin2_test($corem) {
+    $url = variable_get('egrin2_url', '');
+    $resp = drupal_http_request($url . "/api/v1.0.0/corem_expressions/" . $corem);
+    $exps = json_decode($resp->data);
+    $expdata = array();
+    foreach ($exps->expressions as $gene => $values) {
+        $expdata []= (object) array('name' => $gene, 'data' => $values);
+    }
+    drupal_add_http_header('Content-Type', 'application/json');
+    echo drupal_json_output(array('conditions' => $exps->conditions,
+                                    'expressions' => $expdata));
+    drupal_exit();
+}
+
+/* Virtual routes */
+function egrin2_corem() {
+    return t("<h2>Information for Corem " . arg(2) . "</h2>");
+}
+
+function egrin2_corems() {
+    return t("<h2>EGRIN2 Corems</h1>");
 }
