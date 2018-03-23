@@ -38,6 +38,8 @@ function make_corem_table() {
 }
 
 function make_corem_genes_table($corem) {
+    global $base_url;
+    //$base_url = 'http://networks.systemsbiology.net/mtb'; // just testing
     $block['subject'] = t('Corem Genes');
     if (user_access('access content')) {
         $url = variable_get('egrin2_url', '');
@@ -55,7 +57,7 @@ function make_corem_genes_table($corem) {
                         );
         $rows = array();
         foreach ($genes as $g) {
-            $rows []= array(t($g->gene_name),
+            $rows []= array(t('<a href="' . $base_url . '/genes/' . $g->gene_name . '">' . $g->gene_name . "</a>"),
                             t($g->common_name),
                             t("TODO"),
                             t($g->description),
