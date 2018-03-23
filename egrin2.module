@@ -337,7 +337,7 @@ function egrin2_menu() {
      * exist, and therefore just use them
      */
     // Ajax example route
-    $items['egrin2/test/%'] = array('page callback' => 'egrin2_test',
+    $items['egrin2/test/%'] = array('page callback' => 'egrin2_corem_exps',
                                     'page arguments' => array(2,),
                                     'access arguments' => array('access content'),
                                     );
@@ -367,7 +367,7 @@ function egrin2_form($form, &$form_state) {
 
 
 /* AJAX Service functions */
-function egrin2_test($corem) {
+function egrin2_corem_exps($corem) {
     $url = variable_get('egrin2_url', '');
     $resp = drupal_http_request($url . "/api/v1.0.0/corem_expressions/" . $corem);
     $exps = json_decode($resp->data);
