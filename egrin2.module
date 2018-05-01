@@ -18,16 +18,18 @@ function make_corem_table() {
         $url = variable_get('egrin2_url', '');
         $resp = drupal_http_request($url . "/api/v1.0.0/corems");
         $corems = json_decode($resp->data)->corems;
-        $header = array(array("data" => "Corem ID", "sort" => "asc"), array("data" => "# Genes"),
-                        array("data" => "# Conditions"));
+        $header = array(array("data" => "Corem ID", "sort" => "asc", "class" => array('views-field-title')),
+                        array("data" => "# Genes", "class" => array("views-field-title")),
+                        array("data" => "# Conditions", "class" => array("views-field-title")));
         $rows = array();
         foreach ($corems as $c) {
-            $rows []= array(t('<a href="' . $base_url . '/egrin2/corem/' . $c->id . '">' . $c->id . '</a>'),
-                            t($c->num_genes), t($c->num_conds));
+            $rows []= array('data' => array(t('<a href="' . $base_url . '/egrin2/corem/' . $c->id . '">' . $c->id . '</a>'),
+                                            t($c->num_genes), t($c->num_conds)));
         }
         $stable = array("header" => $header,
                         "rows" => $rows,
-                        "attributes" => array(),
+                        "attributes" => array("class" => array("views-table", "cols-11",
+                                                               "table-striped")),
                         "caption" => "",
                         "colgroups" => array(),
                         "sticky" => false,
@@ -46,14 +48,22 @@ function make_corem_genes_table($corem) {
         $resp = drupal_http_request($url . "/api/v1.0.0/corem_genes/" . $corem);
         $genes = json_decode($resp->data)->genes;
 
-        $header = array(array("data" => "Name", "sort" => "asc"),
-                        array("data" => "Common Name"),
-                        array("data" => "Links"),
-                        array("data" => "Description"),
-                        array("data" => "Start"),
-                        array("data" => "Stop"),
-                        array("data" => "Strand"),
-                        array("data" => "Chromosome"),
+        $header = array(array("data" => "Name", "sort" => "asc",
+                              "class" => array("views-field-title")),
+                        array("data" => "Common Name",
+                              "class" => array("views-field-title")),
+                        array("data" => "Links",
+                              "class" => array("views-field-title")),
+                        array("data" => "Description",
+                              "class" => array("views-field-title")),
+                        array("data" => "Start",
+                              "class" => array("views-field-title")),
+                        array("data" => "Stop",
+                              "class" => array("views-field-title")),
+                        array("data" => "Strand",
+                              "class" => array("views-field-title")),
+                        array("data" => "Chromosome",
+                              "class" => array("views-field-title")),
                         );
         $rows = array();
         foreach ($genes as $g) {
@@ -72,7 +82,8 @@ function make_corem_genes_table($corem) {
         }
         $stable = array("header" => $header,
                         "rows" => $rows,
-                        "attributes" => array(),
+                        "attributes" => array("class" => array("views-table", "cols-11",
+                                                               "table-striped")),
                         "caption" => "",
                         "colgroups" => array(),
                         "sticky" => false,
@@ -88,14 +99,18 @@ function make_corem_conditionblocks_table($corem) {
         $url = variable_get('egrin2_url', '');
         $resp = drupal_http_request($url . "/api/v1.0.0/corem_condition_enrichment/" . $corem);
         $blocks = json_decode($resp->data)->condition_blocks;
-        $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
+        $header = array(array("data" => "Name", "sort" => "asc",
+                              "class" => array("views-field-title")),
+                        array("data" => "q-value",
+                              "class" => array("views-field-title")));
         $rows = array();
         foreach ($blocks as $b) {
             $rows []= array(t($b->name),t($b->q_value));
         }
         $stable = array("header" => $header,
                         "rows" => $rows,
-                        "attributes" => array(),
+                        "attributes" => array("class" => array("views-table", "cols-11",
+                                                               "table-striped")),
                         "caption" => "",
                         "colgroups" => array(),
                         "sticky" => false,
@@ -111,14 +126,18 @@ function make_corem_funcat_table($corem) {
         $url = variable_get('egrin2_url', '');
         $resp = drupal_http_request($url . "/api/v1.0.0/corem_categories/" . $corem);
         $cats = json_decode($resp->data)->categories;
-        $header = array(array("data" => "Name", "sort" => "asc"), array("data" => "q-value"));
+        $header = array(array("data" => "Name", "sort" => "asc",
+                              "class" => array("views-field-title")),
+                        array("data" => "q-value",
+                              "class" => array("views-field-title")));
         $rows = array();
         foreach ($cats as $c) {
             $rows []= array(t($c->category),t($c->p_adj));
         }
         $stable = array("header" => $header,
                         "rows" => $rows,
-                        "attributes" => array(),
+                        "attributes" => array("class" => array("views-table", "cols-11",
+                                                               "table-striped")),
                         "caption" => "",
                         "colgroups" => array(),
                         "sticky" => false,
@@ -134,10 +153,14 @@ function make_corem_gres_table($corem) {
         $url = variable_get('egrin2_url', '');
         $resp = drupal_http_request($url . "/api/v1.0.0/corem_gres/" . $corem);
         $gres = json_decode($resp->data)->gres;
-        $header = array(array("data" => "GRE", "sort" => "asc"),
-                        array("data" => "Motif"),
-                        array("data" => "Motif e-value"),
-                        array("data" => "q-value"),
+        $header = array(array("data" => "GRE", "sort" => "asc",
+                              "class" => array("views-field-title")),
+                        array("data" => "Motif",
+                              "class" => array("views-field-title")),
+                        array("data" => "Motif e-value",
+                              "class" => array("views-field-title")),
+                        array("data" => "q-value",
+                              "class" => array("views-field-title")),
                         );
         $rows = array();
         $seqlogo_code = "";
@@ -160,7 +183,8 @@ function make_corem_gres_table($corem) {
                       array('type' => 'inline', 'scope' => 'footer'));
         $stable = array("header" => $header,
                         "rows" => $rows,
-                        "attributes" => array(),
+                        "attributes" => array("class" => array("views-table", "cols-11",
+                                                               "table-striped")),
                         "caption" => "",
                         "colgroups" => array(),
                         "sticky" => false,
